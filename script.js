@@ -1,3 +1,166 @@
+var SignalAbstract = {
+	_value : 0,
+	hertz : 1,
+	amplitude : 1,
+	_lastValue : undefined,
+	_delta : undefined,
+	_creationTime :undefined,
+
+	// override
+	generator : function () {
+		console.log("SignalAbstract::generator Generator function not overrided by child Class");
+
+		return this._value;
+	},
+
+	/* Multiple signals can be connected to combine (average them) */
+	get : function () {
+
+		this.generator();
+
+		if (this._lastValue) this.delta = this._value - this._lastValue;
+		this._lastValue = this._value;
+
+		if (arguments.length > 0) {
+			var arr = [];
+			_.each(arguments, function (signal) {
+				arr.push(signal);
+			});
+			arr.push(this);
+			return this._averageSignals(arr);
+		} else {
+			return this._value;
+		}
+
+	},
+
+	getDelta : function () {
+		
+		return this._delta;
+	},
+
+	_averageSignals : function (arr) {
+		var sum = 0;
+
+		_.each(arr, function (signal) {
+			sum+=signal.get();
+		});
+
+   		return sum/arr.length;
+	}
+};
+
+var SineSignal = function () {
+	
+	this.initialize.apply(this, arguments);
+
+};
+
+_.extend(SineSignal.prototype, SignalAbstract, {
+	
+	initialize : function () {
+
+		this._creationTime = new Date();
+
+	},
+
+	generator : function () {
+		var now = new Date();
+		this._value = Math.sin(((now - this._creationTime) / (1000 / this.hertz)) * Math.PI) * this.amplitude;
+	}
+
+});
+
+var CosineSignal = function () {
+	
+	this.initialize.apply(this, arguments);
+
+};
+
+_.extend(CosineSignal.prototype, SignalAbstract, {
+	
+	initialize : function () {
+
+		this._creationTime = new Date();
+
+	},
+
+	generator : function () {
+		var now = new Date();
+		this._value = Math.cos(((now - this._creationTime) / (1000 / this.hertz)) * Math.PI) * this.amplitude;
+	}
+
+});
+
+
+var WaveView = Backbone.View.extend({
+
+	numBars : 2000,
+	barWidth : 5,
+	bars : [],
+	juggler : undefined,
+
+	initialize : function () {
+
+		this.sineWaveOne = new SineSignal();
+		this.sineWaveOne.hertz = 0.25;
+		this.sineWaveOne.amplitude = 1;
+
+		this.sineWaveTwo = new SineSignal();
+		this.sineWaveTwo.hertz = 10;
+		this.sineWaveTwo.amplitude = 1/6;
+		
+
+		this.cosWave = new CosineSignal();
+		this.cosWave.hertz = 13;
+		this.cosWave.amplitude = 1.3/6;
+
+		this.juggler = new Juggler();
+		this.juggler.fps = 50;
+		this.juggler.addCallback(_.bind(this.render, this)).start();
+
+	},
+
+	render : function () {
+
+		if (this.bars.length * this.barWidth < $(window).width()) {
+			
+			var bar = new ShiverStripe();
+			this.bars.push(bar);
+			bar.width = this.barWidth;
+			bar.left = (bar.width * this.bars.length) - bar.width;
+			
+			// Osciallation
+			var signalValue = this.sineWaveOne.get(this.sineWaveTwo, this.cosWave);
+
+			if (signalValue > 0) {
+				bar.height = 680 * signalValue;
+				bar.top = 680/2;
+			} else {
+				bar.height = 680 * -(signalValue);
+				bar.top = (680/2) - (680 * -(signalValue));
+			}
+
+			$(this.el).append(bar.render().el);
+
+		} else {
+			
+			this.bars.length = [];
+			$(this.el).empty();
+
+		}
+
+		_.each(this.bars, function (bar) {
+			bar.render();
+		});
+	
+	}
+
+
+});
+
+
+
 var ShiverAbstract = Backbone.View.extend({
 
 	top : 0,
@@ -163,7 +326,7 @@ var Juggler = function () {
 var ShiverController = ShiverAbstract.extend({
 	
 	events : { "click" : "clicked" },
-	juggler : new Juggler(),
+	juggler : undefined,
 	// Stripes
 	shiverStripeCount : 1024,
 	shiverStripes : [],
@@ -171,6 +334,8 @@ var ShiverController = ShiverAbstract.extend({
 	shiverWindows : [],
 
 	initialize : function (options) {
+
+		this.juggler = new Juggler();
 
 		///////
 		//////	ShiverStripes
@@ -223,6 +388,7 @@ var ShiverStripe = ShiverAbstract.extend({
 ///
 $(function () {
 	
-	var shiverController = new ShiverController({ el: $("#theTrigger") });
+	//var shiverController = new ShiverController({ el: $("#theTrigger") });
+	var waveView = new WaveView({ el: $("#theTrigger") });
 
 });

@@ -14,12 +14,34 @@
 	<script type="text/javascript" src="libs/jquery-1.6.2.js"></script>
 	<script type="text/javascript" src="libs/underscore.js"></script>
 	<script type="text/javascript" src="libs/backbone.js"></script>
+
+	<script type="text/javascript" src="https://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
+	<script type="text/javascript">
+		$(function () {
+
+			var stats = new Stats();
+
+			// Align top-left
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.left = '0px';
+			stats.domElement.style.top = '0px';
+
+			$("body").append(stats.domElement);
+
+			setInterval( function () {
+
+			    stats.update();
+
+			}, 1000 / 60 );
+				
+		});
+	</script>
+
 	<script type="text/javascript" src="script.js"></script>
 
 	<meta name=viewport content="width=device-width; initial-scale=1.0;">
 
-	<link rel=stylesheet href="">
-	<link rel=stylesheet href="" media="handheld">
+	<link rel=stylesheet href="style.css">
 </head>
 <body>
 
